@@ -53,10 +53,16 @@ CREATE TABLE IF NOT EXISTS `jobs` (
 CREATE TABLE IF NOT EXISTS `applications` (
   `application_id` INT AUTO_INCREMENT PRIMARY KEY,
   `student_id` INT NOT NULL,
+<<<<<<< HEAD
   `student_name` VARCHAR(255) NOT NULL,
   `job_id` INT NOT NULL,
   `status` VARCHAR(100) DEFAULT 'Applied',
   `applied_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+=======
+  `job_id` INT NOT NULL,
+  `status` VARCHAR(100) DEFAULT 'Applied',
+  `applied_date` DATE NOT NULL,
+>>>>>>> 83320e1 (Backend)
   FOREIGN KEY (`student_id`) REFERENCES `students`(`student_id`) ON DELETE CASCADE,
   FOREIGN KEY (`job_id`) REFERENCES `jobs`(`job_id`) ON DELETE CASCADE
 );
@@ -107,3 +113,8 @@ INSERT IGNORE INTO `jobs` (`company_id`,`title`,`min_cgpa`,`max_backlogs`,`salar
   (20,'Payments Backend Engineer',7.8,1,'₹21 LPA','2026-06-30 17:00:00');
 
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 83320e1 (Backend)

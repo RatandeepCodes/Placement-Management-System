@@ -11,6 +11,7 @@ const db = mysql.createConnection({
 
 const schemaPath = path.join(__dirname, "..", "placement_management_system.sql");
 
+<<<<<<< HEAD
 const ensureStudentCompatibility = () => {
   db.query(
     "SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE table_schema = 'placement_management_system' AND table_name = 'students' AND column_name = 'about'",
@@ -112,6 +113,8 @@ const ensureApplicationTimestampCompatibility = () => {
   );
 };
 
+=======
+>>>>>>> 83320e1 (Backend)
 const setupDatabase = () => {
   db.query("CREATE DATABASE IF NOT EXISTS placement_management_system", (err) => {
     if (err) {
@@ -133,9 +136,33 @@ const setupDatabase = () => {
             return;
           }
           console.log("Database and tables are ready.");
+<<<<<<< HEAD
           ensureStudentCompatibility();
           ensureApplicationCompatibility();
           ensureApplicationTimestampCompatibility();
+=======
+
+          // Ensure about column exists for backwards compatibility.
+          db.query(
+            "SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE table_schema = 'placement_management_system' AND table_name = 'students' AND column_name = 'about'",
+            (colErr, results) => {
+              if (colErr) {
+                console.error("Error checking about column:\n", colErr);
+                return;
+              }
+              const hasAbout = results && results[0] && results[0].count > 0;
+              if (!hasAbout) {
+                db.query("ALTER TABLE students ADD COLUMN about TEXT", (alterErr) => {
+                  if (alterErr) {
+                    console.error("Error adding about column:\n", alterErr);
+                  } else {
+                    console.log("Added missing about column to students table.");
+                  }
+                });
+              }
+            }
+          );
+>>>>>>> 83320e1 (Backend)
         });
       } catch (readErr) {
         console.error("Failed to read schema file:\n", readErr);
@@ -155,4 +182,8 @@ db.connect((err) => {
 
 module.exports = db;
 
+<<<<<<< HEAD
 module.exports = db
+=======
+module.exports = db
+>>>>>>> 83320e1 (Backend)
