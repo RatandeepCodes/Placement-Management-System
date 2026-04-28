@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchApplications } from "@/lib/api";
-import { formatDateTime } from "@/lib/utils";
+import { formatAppliedDateTime } from "@/lib/utils";
 
 const Applications = () => {
   const userId = Number(localStorage.getItem("user_id") || "0");
@@ -56,7 +56,7 @@ const Applications = () => {
                     <TableRow key={app.application_id}>
                       <TableCell className="font-medium">{app.title}</TableCell>
                       <TableCell>{app.name}</TableCell>
-                      <TableCell>{formatDateTime(app.applied_date)}</TableCell>
+                      <TableCell>{formatAppliedDateTime(app.applied_date)}</TableCell>
                       <TableCell>
                         <StatusBadge status={app.status || "Applied"} />
                       </TableCell>

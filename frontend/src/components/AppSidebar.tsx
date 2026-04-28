@@ -10,7 +10,6 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -36,7 +35,7 @@ const adminItems = [
   { title: "Students", url: "/admin/students", icon: Users },
   { title: "Companies", url: "/admin/companies", icon: Building2 },
   { title: "Jobs", url: "/admin/jobs", icon: Briefcase },
-  { title: "Applications", url: "/applications", icon: FileText },
+  { title: "Applications", url: "/admin/applications", icon: FileText },
   { title: "Placements", url: "/admin/placements", icon: CheckCircle },
 ];
 
@@ -47,7 +46,6 @@ interface AppSidebarProps {
 export function AppSidebar({ role }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
   const items = role === "admin" ? adminItems : studentItems;
 
   return (
