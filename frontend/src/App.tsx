@@ -14,6 +14,7 @@ import AdminStudents from "./pages/AdminStudents";
 import AdminCompanies from "./pages/AdminCompanies";
 import AdminPlacements from "./pages/AdminPlacements";
 import AdminJobs from "./pages/AdminJobs";
+import AdminApplications from "./pages/AdminApplications";
 import Jobs from "./pages/Jobs";
 import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
@@ -113,6 +114,14 @@ const App = () => (
             element={
               <ProtectedRoute role="admin">
                 <AdminJobs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/applications"
+            element={
+              <ProtectedRoute role="admin">
+                <AdminApplications />
               </ProtectedRoute>
             }
           />

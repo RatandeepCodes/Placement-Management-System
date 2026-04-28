@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import DashboardCard from "@/components/DashboardCard";
 import { Briefcase, FileText, PhoneCall, CheckCircle } from "lucide-react";
 import { fetchJobs, fetchApplications } from "@/lib/api";
+import { formatAppliedDateTime } from "@/lib/utils";
 
 const StudentDashboard = () => {
   const userId = Number(localStorage.getItem("user_id") || "0");
@@ -62,7 +63,7 @@ const StudentDashboard = () => {
           <div className="space-y-3">
             {applications.slice(-3).reverse().map((app, i) => (
               <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <span className="text-sm text-card-foreground">{`Applied to ${app.title} on ${new Date(app.applied_date).toLocaleDateString()}`}</span>
+                <span className="text-sm text-card-foreground">{`Applied to ${app.title} on ${formatAppliedDateTime(app.applied_date)}`}</span>
                 <span className="text-xs text-muted-foreground">{app.status}</span>
               </div>
             ))}

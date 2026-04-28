@@ -15,6 +15,24 @@ export function formatDateTime(value: string | number | Date | undefined | null)
   });
 }
 
+export function formatAppliedDateTime(value: string | number | Date | undefined | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  const isMidnight =
+    date.getHours() === 0 &&
+    date.getMinutes() === 0 &&
+    date.getSeconds() === 0 &&
+    date.getMilliseconds() === 0;
+
+  if (isMidnight) {
+    return formatDate(date);
+  }
+
+  return formatDateTime(date);
+}
+
 export function formatDate(value: string | number | Date | undefined | null) {
   if (!value) return "";
   const date = new Date(value);
