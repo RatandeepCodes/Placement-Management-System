@@ -18,6 +18,36 @@ const rejectIneligibleApplications = (userId, callback) => {
   });
 };
 
+const saveStudentResume = (studentId, resumeData, callback) => {
+  if (!studentId) {
+    if (typeof callback === "function") callback(null);
+    return;
+  }
+
+  const normalizedResume = typeof resumeData === "string" ? resumeData.trim() : "";
+
+  if (!normalizedResume) {
+    db.query("DELETE FROM student_resumes WHERE student_id = ?", [studentId], (err) => {
+      if (typeof callback === "function") callback(err || null);
+    });
+    return;
+  }
+
+  db.query(
+    `
+      INSERT INTO student_resumes (student_id, resume_data)
+      VALUES (?, ?)
+      ON DUPLICATE KEY UPDATE
+        resume_data = VALUES(resume_data),
+        updated_at = CURRENT_TIMESTAMP
+    `,
+    [studentId, normalizedResume],
+    (err) => {
+      if (typeof callback === "function") callback(err || null);
+    },
+  );
+};
+
 exports.createStudent = (req, res) => {
   const userId = req.user?.id;
   if (!userId) {
@@ -28,18 +58,24 @@ exports.createStudent = (req, res) => {
 
   const sql = `
     INSERT INTO students 
-    (user_id, name, roll_no, branch, cgpa, backlogs, phone, year, about, resume_filename, resume_data)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (user_id, name, roll_no, branch, cgpa, backlogs, phone, year, about, resume_filename)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(
     sql,
-    [userId, name, roll_no, branch, cgpa, backlogs, phone, year, about || null, resume_filename || null, resume_data || null],
+    [userId, name, roll_no, branch, cgpa, backlogs, phone, year, about || null, resume_filename || null],
     (err, result) => {
       if (err) return res.status(500).json({ message: err.message || "Failed to create student" });
 
-      rejectIneligibleApplications(userId, () => {
-        res.json({ message: "Student profile created successfully" });
+      saveStudentResume(result.insertId, resume_data, (resumeError) => {
+        if (resumeError) {
+          return res.status(500).json({ message: resumeError.message || "Failed to save student resume" });
+        }
+
+        rejectIneligibleApplications(userId, () => {
+          res.json({ message: "Student profile created successfully" });
+        });
       });
     }
   );
@@ -52,7 +88,12 @@ exports.getStudent = (req, res) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const sql = "SELECT * FROM students WHERE user_id = ?";
+  const sql = `
+    SELECT s.*, sr.resume_data
+    FROM students AS s
+    LEFT JOIN student_resumes AS sr ON sr.student_id = s.student_id
+    WHERE s.user_id = ?
+  `;
 
   db.query(sql, [userId], (err, results) => {
     if (err) return res.status(500).json({ message: err.message || "Failed to retrieve student" });
@@ -90,14 +131,14 @@ exports.updateStudent = (req, res) => {
 
   const sql = `
     UPDATE students
-    SET name = ?, roll_no = ?, branch = ?, cgpa = ?, backlogs = ?, phone = ?, year = ?, about = ?, resume_filename = ?, resume_data = ?
+    SET name = ?, roll_no = ?, branch = ?, cgpa = ?, backlogs = ?, phone = ?, year = ?, about = ?, resume_filename = ?
     WHERE user_id = ?
   `;
 
   const executeUpdate = () => {
     db.query(
       sql,
-      [name, roll_no, branch, cgpa, backlogs, phone, year, about || null, resume_filename || null, resume_data || null, userId],
+      [name, roll_no, branch, cgpa, backlogs, phone, year, about || null, resume_filename || null, userId],
       (err, result) => {
         if (err) {
           if (err.code === "ER_BAD_FIELD_ERROR" && err.sqlMessage.includes("about")) {
@@ -113,24 +154,44 @@ exports.updateStudent = (req, res) => {
         if (result.affectedRows === 0) {
           // Insert new record if none exists
           const insertSql = `
-            INSERT INTO students (user_id, name, roll_no, branch, cgpa, backlogs, phone, year, about, resume_filename, resume_data)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO students (user_id, name, roll_no, branch, cgpa, backlogs, phone, year, about, resume_filename)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `;
           return db.query(
             insertSql,
-            [userId, name, roll_no, branch, cgpa, backlogs, phone, year, about || null, resume_filename || null, resume_data || null],
-            (insertErr) => {
+            [userId, name, roll_no, branch, cgpa, backlogs, phone, year, about || null, resume_filename || null],
+            (insertErr, insertResult) => {
               if (insertErr) return res.status(500).json({ message: insertErr.message || "Failed to create student" });
 
-              rejectIneligibleApplications(userId, () => {
-                res.json({ message: "Student profile created successfully" });
+              saveStudentResume(insertResult.insertId, resume_data, (resumeError) => {
+                if (resumeError) {
+                  return res.status(500).json({ message: resumeError.message || "Failed to save student resume" });
+                }
+
+                rejectIneligibleApplications(userId, () => {
+                  res.json({ message: "Student profile created successfully" });
+                });
               });
             }
           );
         }
 
-        rejectIneligibleApplications(userId, () => {
-          res.json({ message: "Student profile updated successfully" });
+        db.query("SELECT student_id FROM students WHERE user_id = ? LIMIT 1", [userId], (studentErr, studentResults) => {
+          if (studentErr) {
+            return res.status(500).json({ message: studentErr.message || "Failed to retrieve student" });
+          }
+
+          const studentId = studentResults[0]?.student_id;
+
+          saveStudentResume(studentId, resume_data, (resumeError) => {
+            if (resumeError) {
+              return res.status(500).json({ message: resumeError.message || "Failed to save student resume" });
+            }
+
+            rejectIneligibleApplications(userId, () => {
+              res.json({ message: "Student profile updated successfully" });
+            });
+          });
         });
       }
     );

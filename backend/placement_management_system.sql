@@ -24,8 +24,14 @@ CREATE TABLE IF NOT EXISTS `students` (
   `year` VARCHAR(50),
   `about` TEXT,
   `resume_filename` VARCHAR(255),
-  `resume_data` LONGTEXT,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `student_resumes` (
+  `student_id` INT PRIMARY KEY,
+  `resume_data` LONGTEXT,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (`student_id`) REFERENCES `students`(`student_id`) ON DELETE CASCADE
 );
 
 -- Company table
@@ -53,16 +59,10 @@ CREATE TABLE IF NOT EXISTS `jobs` (
 CREATE TABLE IF NOT EXISTS `applications` (
   `application_id` INT AUTO_INCREMENT PRIMARY KEY,
   `student_id` INT NOT NULL,
-<<<<<<< HEAD
   `student_name` VARCHAR(255) NOT NULL,
   `job_id` INT NOT NULL,
   `status` VARCHAR(100) DEFAULT 'Applied',
   `applied_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-=======
-  `job_id` INT NOT NULL,
-  `status` VARCHAR(100) DEFAULT 'Applied',
-  `applied_date` DATE NOT NULL,
->>>>>>> 83320e1 (Backend)
   FOREIGN KEY (`student_id`) REFERENCES `students`(`student_id`) ON DELETE CASCADE,
   FOREIGN KEY (`job_id`) REFERENCES `jobs`(`job_id`) ON DELETE CASCADE
 );
@@ -112,9 +112,3 @@ INSERT IGNORE INTO `jobs` (`company_id`,`title`,`min_cgpa`,`max_backlogs`,`salar
   (19,'Shopify Frontend Developer',7.0,2,'₹14 LPA','2026-06-25 17:00:00'),
   (20,'Payments Backend Engineer',7.8,1,'₹21 LPA','2026-06-30 17:00:00');
 
-
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 83320e1 (Backend)

@@ -11,35 +11,94 @@ const db = mysql.createConnection({
 
 const schemaPath = path.join(__dirname, "..", "placement_management_system.sql");
 
-<<<<<<< HEAD
 const ensureStudentCompatibility = () => {
   db.query(
     "SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE table_schema = 'placement_management_system' AND table_name = 'students' AND column_name = 'about'",
-    (colErr, results) => {
-      if (colErr) {
-        console.error("Error checking about column:\n", colErr);
+    (columnError, results) => {
+      if (columnError) {
+        console.error("Error checking about column:\n", columnError);
         return;
       }
+
       const hasAbout = results && results[0] && results[0].count > 0;
       if (!hasAbout) {
-        db.query("ALTER TABLE students ADD COLUMN about TEXT", (alterErr) => {
-          if (alterErr) {
-            console.error("Error adding about column:\n", alterErr);
+        db.query("ALTER TABLE students ADD COLUMN about TEXT", (alterError) => {
+          if (alterError) {
+            console.error("Error adding about column:\n", alterError);
           } else {
             console.log("Added missing about column to students table.");
           }
         });
       }
-    }
+    },
   );
+};
+
+const ensureStudentResumeCompatibility = () => {
+  const createResumeTableSql = `
+    CREATE TABLE IF NOT EXISTS student_resumes (
+      student_id INT PRIMARY KEY,
+      resume_data LONGTEXT,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
+    )
+  `;
+
+  db.query(createResumeTableSql, (tableError) => {
+    if (tableError) {
+      console.error("Error ensuring student_resumes table:\n", tableError);
+      return;
+    }
+
+    db.query(
+      "SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE table_schema = 'placement_management_system' AND table_name = 'students' AND column_name = 'resume_data'",
+      (columnError, results) => {
+        if (columnError) {
+          console.error("Error checking students.resume_data column:\n", columnError);
+          return;
+        }
+
+        const hasResumeData = results && results[0] && results[0].count > 0;
+        if (!hasResumeData) {
+          return;
+        }
+
+        db.query(
+          `
+            INSERT INTO student_resumes (student_id, resume_data)
+            SELECT student_id, resume_data
+            FROM students
+            WHERE resume_data IS NOT NULL AND resume_data <> ''
+            ON DUPLICATE KEY UPDATE
+              resume_data = VALUES(resume_data),
+              updated_at = CURRENT_TIMESTAMP
+          `,
+          (backfillError) => {
+            if (backfillError) {
+              console.error("Error migrating student resume data:\n", backfillError);
+              return;
+            }
+
+            db.query("ALTER TABLE students DROP COLUMN resume_data", (alterError) => {
+              if (alterError) {
+                console.error("Error removing students.resume_data column:\n", alterError);
+              } else {
+                console.log("Moved resume data out of students table.");
+              }
+            });
+          },
+        );
+      },
+    );
+  });
 };
 
 const ensureApplicationCompatibility = () => {
   db.query(
     "SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE table_schema = 'placement_management_system' AND table_name = 'applications' AND column_name = 'student_name'",
-    (colErr, results) => {
-      if (colErr) {
-        console.error("Error checking student_name column:\n", colErr);
+    (columnError, results) => {
+      if (columnError) {
+        console.error("Error checking student_name column:\n", columnError);
         return;
       }
 
@@ -53,41 +112,41 @@ const ensureApplicationCompatibility = () => {
             SET a.student_name = s.name
             WHERE a.student_name IS NULL OR a.student_name = ''
           `,
-          (updateErr) => {
-            if (updateErr) {
-              console.error("Error backfilling application student names:\n", updateErr);
+          (updateError) => {
+            if (updateError) {
+              console.error("Error backfilling application student names:\n", updateError);
             }
-          }
+          },
         );
       };
 
       if (!hasStudentName) {
         db.query(
           "ALTER TABLE applications ADD COLUMN student_name VARCHAR(255) NULL AFTER student_id",
-          (alterErr) => {
-            if (alterErr) {
-              console.error("Error adding student_name column:\n", alterErr);
+          (alterError) => {
+            if (alterError) {
+              console.error("Error adding student_name column:\n", alterError);
               return;
             }
 
             console.log("Added missing student_name column to applications table.");
             backfillStudentNames();
-          }
+          },
         );
         return;
       }
 
       backfillStudentNames();
-    }
+    },
   );
 };
 
 const ensureApplicationTimestampCompatibility = () => {
   db.query(
     "SELECT DATA_TYPE AS dataType FROM information_schema.COLUMNS WHERE table_schema = 'placement_management_system' AND table_name = 'applications' AND column_name = 'applied_date'",
-    (colErr, results) => {
-      if (colErr) {
-        console.error("Error checking applied_date column:\n", colErr);
+    (columnError, results) => {
+      if (columnError) {
+        console.error("Error checking applied_date column:\n", columnError);
         return;
       }
 
@@ -100,80 +159,56 @@ const ensureApplicationTimestampCompatibility = () => {
       if (currentType === "date") {
         db.query(
           "ALTER TABLE applications MODIFY COLUMN applied_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
-          (alterErr) => {
-            if (alterErr) {
-              console.error("Error upgrading applied_date column to DATETIME:\n", alterErr);
+          (alterError) => {
+            if (alterError) {
+              console.error("Error upgrading applied_date column to DATETIME:\n", alterError);
             } else {
               console.log("Upgraded applied_date column to DATETIME in applications table.");
             }
-          }
+          },
         );
       }
-    }
+    },
   );
 };
 
-=======
->>>>>>> 83320e1 (Backend)
 const setupDatabase = () => {
-  db.query("CREATE DATABASE IF NOT EXISTS placement_management_system", (err) => {
-    if (err) {
-      console.error("Failed to create database:\n", err);
+  db.query("CREATE DATABASE IF NOT EXISTS placement_management_system", (databaseError) => {
+    if (databaseError) {
+      console.error("Failed to create database:\n", databaseError);
       return;
     }
 
-    db.query("USE placement_management_system", (err) => {
-      if (err) {
-        console.error("Failed to use database:\n", err);
+    db.query("USE placement_management_system", (useError) => {
+      if (useError) {
+        console.error("Failed to use database:\n", useError);
         return;
       }
 
       try {
         const sql = fs.readFileSync(schemaPath, "utf8");
-        db.query(sql, (err2) => {
-          if (err2) {
-            console.error("Error executing schema file:\n", err2);
+        db.query(sql, (schemaError) => {
+          if (schemaError) {
+            console.error("Error executing schema file:\n", schemaError);
             return;
           }
+
           console.log("Database and tables are ready.");
-<<<<<<< HEAD
           ensureStudentCompatibility();
+          ensureStudentResumeCompatibility();
           ensureApplicationCompatibility();
           ensureApplicationTimestampCompatibility();
-=======
-
-          // Ensure about column exists for backwards compatibility.
-          db.query(
-            "SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE table_schema = 'placement_management_system' AND table_name = 'students' AND column_name = 'about'",
-            (colErr, results) => {
-              if (colErr) {
-                console.error("Error checking about column:\n", colErr);
-                return;
-              }
-              const hasAbout = results && results[0] && results[0].count > 0;
-              if (!hasAbout) {
-                db.query("ALTER TABLE students ADD COLUMN about TEXT", (alterErr) => {
-                  if (alterErr) {
-                    console.error("Error adding about column:\n", alterErr);
-                  } else {
-                    console.log("Added missing about column to students table.");
-                  }
-                });
-              }
-            }
-          );
->>>>>>> 83320e1 (Backend)
         });
-      } catch (readErr) {
-        console.error("Failed to read schema file:\n", readErr);
+      } catch (readError) {
+        console.error("Failed to read schema file:\n", readError);
       }
     });
   });
 };
 
-db.connect((err) => {
-  if (err) {
-    console.error("Database connection failed:\n", err);
+db.connect((connectionError) => {
+  if (connectionError) {
+    console.error("Database connection failed:\n", connectionError);
   } else {
     console.log("Connected to MySQL");
     setupDatabase();
@@ -181,9 +216,3 @@ db.connect((err) => {
 });
 
 module.exports = db;
-
-<<<<<<< HEAD
-module.exports = db
-=======
-module.exports = db
->>>>>>> 83320e1 (Backend)

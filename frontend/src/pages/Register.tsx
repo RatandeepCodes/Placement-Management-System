@@ -17,9 +17,16 @@ const Register = () => {
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (password.length < 8 || password.length > 15) {
+      toast.error("Password must be between 8 and 15 characters");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await registerUser({ email, password, role });
+      await registerUser({ email: normalizedEmail, password, role });
       toast.success("Registration successful. Please login.");
       navigate("/login");
     } catch (err: any) {
@@ -70,8 +77,11 @@ const Register = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                minLength={8}
+                maxLength={15}
                 required
               />
+              <p className="text-xs text-muted-foreground">Password must be 8 to 15 characters.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
